@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader';
-import { Activity, Volume2, VolumeX, MessageCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { Activity, Volume2, VolumeX, ChevronUp, ChevronDown } from 'lucide-react';
 import AICoachChat from './AICoachChat';
 
 const AVATAR_URL =
