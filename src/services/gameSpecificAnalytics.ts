@@ -19,6 +19,7 @@ import {
   StrategyDebt,
   WinProbability
 } from '../types/grid';
+import { resolveCharacter } from '../utils/typeHelpers';
 
 // =====================================================
 // GAME CONFIGURATIONS
@@ -227,9 +228,10 @@ export class GameSpecificAnalyzer {
     _team: GRIDTeam,
     _game: GRIDGame
   ): Partial<PlayerStats> {
+    const characterName = resolveCharacter(player.character);
     const stats: Partial<PlayerStats> = {
       role: player.role || 'Unknown',
-      character: player.character,
+      character: characterName,
     };
     
     if (this.config.type === 'fps') {
@@ -241,17 +243,17 @@ export class GameSpecificAnalyzer {
       
       // Valorant-specific
       if (this.config.id === 6) {
-        stats.agent = player.character;
+        stats.agent = characterName;
       }
       
     } else if (this.config.type === 'moba') {
       // MOBA-specific stats
       if (this.config.id === 3) {
         // League of Legends
-        stats.champion = player.character;
+        stats.champion = characterName;
       } else if (this.config.id === 2) {
         // Dota 2
-        stats.hero = player.character;
+        stats.hero = characterName;
       }
     }
     

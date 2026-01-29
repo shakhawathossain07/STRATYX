@@ -9,6 +9,7 @@
  */
 
 import { GRIDPlayer, GRIDTeam, GRIDGame, GRIDSeriesState, GRIDSeriesInfo } from './gridDataService';
+import { resolveCharacter, resolveMapName } from '../utils/typeHelpers';
 
 // =====================================================
 // GAME-SPECIFIC CONSTANTS
@@ -392,7 +393,7 @@ export class GRIDDataProcessor {
     return {
       id: game.id,
       number: game.number,
-      map: game.map,
+      map: resolveMapName(game.map),
       duration,
       winner,
       finalScore: {
@@ -520,7 +521,7 @@ export class GRIDDataProcessor {
       damageTaken,
       damageEfficiency,
       headshotPercentage,
-      characterAgent: player.character,
+      characterAgent: resolveCharacter(player.character),
       averageEconomy: player.averageLoadoutValue,
       clutchWinRate,
       performanceTrend: 'stable', // Would need historical data
