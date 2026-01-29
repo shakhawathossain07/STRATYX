@@ -96,4 +96,5 @@ src/
 ```
 
 ## License
-See `LICENSE`.
+MIT Open Source
+
