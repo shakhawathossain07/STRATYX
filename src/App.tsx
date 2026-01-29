@@ -5,6 +5,7 @@ import { PlayerAnalysisView } from './views/PlayerAnalysisView'
 import { CoachInsightsView } from './views/CoachInsightsView'
 import { StratyxProvider } from './contexts/StratyxContext'
 import { CoachAnalyticsProvider } from './contexts/CoachAnalyticsContext'
+import { FloatingAICoach } from './components/FloatingAICoach'
 
 type View = 'dashboard' | 'player-analysis' | 'strategy-debt';
 
@@ -30,6 +31,8 @@ function App() {
         <Layout currentView={currentView} onViewChange={setCurrentView}>
           {renderView()}
         </Layout>
+        {/* Floating AI Coach - accessible from any view */}
+        <FloatingAICoach />
       </CoachAnalyticsProvider>
     </StratyxProvider>
   )

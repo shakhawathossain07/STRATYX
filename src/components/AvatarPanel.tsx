@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader';
-import { Activity, Volume2, VolumeX } from 'lucide-react';
+import { Activity, Volume2, VolumeX, MessageCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import AICoachChat from './AICoachChat';
 
 const AVATAR_URL =
   'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/Michelle.glb'; 
@@ -44,6 +45,10 @@ export const AvatarPanel: React.FC = () => {
   // Audio state
   const [isMuted, setIsMuted] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Chat panel state
+  const [isChatExpanded, setIsChatExpanded] = useState(true);
+  const [showAvatar, setShowAvatar] = useState(true);
 
   // Handle Audio
   useEffect(() => {
@@ -277,16 +282,23 @@ export const AvatarPanel: React.FC = () => {
   }, []);
 
   return (
-    <div className="avatar-panel">
+    <div className="avatar-panel flex flex-col h-full">
       {/* Hidden Audio Element */}
       <audio ref={audioRef} src={BACKGROUND_MUSIC_URL} loop />
 
-      <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-500">
+      <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-500 p-4 border-b border-slate-800/50">
         <div className="flex items-center gap-2">
           <span className="avatar-dot" />
           <span>ARIA</span>
         </div>
         <div className="flex items-center gap-3">
+             <button 
+                onClick={() => setShowAvatar(!showAvatar)} 
+                className="hover:text-sky-400 transition-colors focus:outline-none"
+                title={showAvatar ? "Hide Avatar" : "Show Avatar"}
+             >
+                {showAvatar ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+             </button>
              <button 
                 onClick={() => setIsMuted(!isMuted)} 
                 className="hover:text-sky-400 transition-colors focus:outline-none"
@@ -298,8 +310,19 @@ export const AvatarPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="avatar-canvas">
-        <div ref={mountRef} className="absolute inset-0" />
+      {/* Collapsible Avatar Section */}
+      {showAvatar && (
+        <div className="avatar-canvas h-48 min-h-[12rem] relative border-b border-slate-800/50">
+          <div ref={mountRef} className="absolute inset-0" />
+        </div>
+      )}
+
+      {/* AI Coach Chat - Takes remaining space */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <AICoachChat 
+          isExpanded={isChatExpanded} 
+          onToggleExpand={() => setIsChatExpanded(!isChatExpanded)} 
+        />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_GRID_API_KEY: string;
+  readonly VITE_GEMINI_API_KEY: string;
   readonly VITE_GRID_CENTRAL_DATA_URL: string;
   readonly VITE_GRID_SERIES_STATE_URL: string;
   readonly VITE_GRID_FILE_DOWNLOAD_URL: string;
