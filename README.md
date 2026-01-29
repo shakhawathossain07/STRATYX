@@ -8,7 +8,7 @@ STRATYX is a data-driven assistant coach for esports teams. It uses official GRI
 - Shows live scoreboards, map breakdowns, and player K/D stats
 - Provides a player analysis view with sortable tables and per-map performance
 - Generates coaching insights based on verified match stats
-- Shows API health checks and settings in-app
+- Shows API health checks and settings in-app, including API key status
 - Includes a 3D assistant panel with optional background audio
 
 ## Views
@@ -83,7 +83,7 @@ If you do not set the endpoint variables, the app uses the default hackathon end
 ## Security and API keys
 - Keep your API key in `.env` only. This file is ignored by git.
 - Do not paste keys into source files or commit them to the repository.
-- The Settings modal can test a key for the current session, but changes are not persisted. Update `.env` for permanence.
+- The Settings modal only displays whether an API key is configured. To change it, edit `.env` and restart the dev server.
 
 ## Project structure
 ```
