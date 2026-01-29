@@ -19,13 +19,24 @@ const FILE_DOWNLOAD_BASE = 'https://api.grid.gg/file-download';
 // TYPE DEFINITIONS - Based on GRID API Schema
 // =====================================================
 
+export interface GRIDPlayerRoundStats {
+  roundNumber: number;
+  kills: number;
+  deaths: number;
+  damageDealt: number;
+  damageTaken: number;
+  wasFirstKill: boolean;
+  wasFirstDeath: boolean;
+  equipmentValue: number;
+}
+
 export interface GRIDPlayer {
   id: string;
   name: string;
   kills: number;
   deaths: number;
   assists?: number;  // Optional - not always provided by API
-  character?: string;
+  character?: { id: string; name: string } | string;
   role?: string;
   netWorth?: number;
   damageDealt?: number;
@@ -35,6 +46,9 @@ export interface GRIDPlayer {
   firstDeaths?: number;
   clutchWins?: number;
   clutchAttempts?: number;
+  clutchesWon?: number;
+  clutchesLost?: number;
+  multikills?: number;
   multiKills?: number;
   aces?: number;
   plants?: number;
@@ -42,6 +56,20 @@ export interface GRIDPlayer {
   // Economy metrics
   averageLoadoutValue?: number;
   economyRating?: number;
+  // Round-by-round stats (if available)
+  statsByRound?: GRIDPlayerRoundStats[];
+}
+
+export interface GRIDRound {
+  number: number;
+  outcome?: string;
+  winningTeam?: { id: string; name: string };
+  bomb?: {
+    planted: boolean;
+    defused: boolean;
+    exploded: boolean;
+  };
+  roundType?: string;
 }
 
 export interface GRIDTeam {
@@ -57,8 +85,11 @@ export interface GRIDTeam {
   roundsWon?: number;
   roundsLost?: number;
   attackRoundsWon?: number;
+  attackRoundsLost?: number;
   defenseRoundsWon?: number;
+  defenseRoundsLost?: number;
   pistolRoundsWon?: number;
+  pistolRoundsLost?: number;
   econRoundsWon?: number;
   forceRoundsWon?: number;
   fullBuyRoundsWon?: number;
@@ -67,11 +98,14 @@ export interface GRIDTeam {
 export interface GRIDGame {
   id: string;
   number: number;
-  map?: string;
+  sequenceNumber?: number;
+  map?: { name: string } | string;
   startedAt?: string;
   finishedAt?: string;
   durationMs?: number;
+  clock?: { currentSeconds: number };
   teams: GRIDTeam[];
+  rounds?: GRIDRound[];
   winner?: GRIDTeam;
 }
 
@@ -378,11 +412,16 @@ export const GET_DETAILED_SERIES_STATE = gql`
           name
           score
           won
+          side
           players {
             id
             name
             kills
             deaths
+            character {
+              id
+              name
+            }
           }
         }
       }

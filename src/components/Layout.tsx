@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, TrendingDown, Users, Settings, Activity, Wifi, WifiOff } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, Wifi, WifiOff, Brain, Activity } from 'lucide-react';
 import { AvatarPanel } from './AvatarPanel';
 import { SettingsModal } from './SettingsModal';
 import { useStratyxContext } from '../contexts/StratyxContext';
@@ -34,14 +34,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView = 'dashboa
     || legacySeries?.title?.name 
     || '';
     
-  // Determine Live Status and Win Prob
+  // Determine Live Status and Series Score
   // For now, if we have an analyzed series and it's not finished, we treat it as potentially live or just "Analyzed"
   const isLive = legacyIsLive || (analyzedSeries?.state?.started && !analyzedSeries?.state?.finished);
   const displayStatus = isLive ? 'LIVE MATCH' : isAnalysisActive ? 'ANALYSIS ACTIVE' : 'C9 STANDBY';
   
-  const displayWinProb = analyzedSeries 
-    ? (analyzedSeries.winProbability.probability * 100).toFixed(1)
-    : '50.0';
+  // Get actual series score from API data
+  const homeScore = analyzedSeries?.state?.teams?.[0]?.score ?? 0;
+  const awayScore = analyzedSeries?.state?.teams?.[1]?.score ?? 0;
+  const hasSeriesData = !!analyzedSeries?.state;
 
   const apiError = seriesError; // Use series error from analytics context
 
@@ -70,8 +71,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView = 'dashboa
             onClick={() => onViewChange?.('dashboard')}
           />
           <NavItem
-            icon={<TrendingDown size={20} />}
-            label="Strategy Debt™"
+            icon={<Brain size={20} />}
+            label="Coach Insights"
             active={currentView === 'strategy-debt'}
             onClick={() => onViewChange?.('strategy-debt')}
           />
@@ -163,15 +164,29 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView = 'dashboa
                 API Error: {apiError}
               </div>
             )}
-            <div className="text-right">
-              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Win Probability</p>
-              <div className="flex items-end justify-end gap-2">
-                  <span className="text-2xl font-game font-bold text-primary drop-shadow-[0_0_10px_rgba(0,204,255,0.5)]">
-                    {displayWinProb}%
-                  </span>
-                  <Activity size={16} className="text-primary mb-1.5 animate-pulse" />
+            {hasSeriesData ? (
+              <div className="text-right">
+                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Series Score</p>
+                <div className="flex items-center justify-end gap-3">
+                    <span className="text-2xl font-game font-bold text-primary drop-shadow-[0_0_10px_rgba(0,204,255,0.5)]">
+                      {homeScore}
+                    </span>
+                    <span className="text-lg text-slate-600">-</span>
+                    <span className="text-2xl font-game font-bold text-accent drop-shadow-[0_0_10px_rgba(255,107,107,0.5)]">
+                      {awayScore}
+                    </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-right">
+                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Status</p>
+                <div className="flex items-end justify-end gap-2">
+                    <span className="text-lg font-game text-slate-400">
+                      Select Match
+                    </span>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 

@@ -82,6 +82,11 @@ export interface TeamPerformanceMetrics {
   totalKills: number;
   totalDeaths: number;
   totalAssists: number;
+  
+  // Data Availability Flags (for UI indicators)
+  _hasAttackDefenseData?: boolean;
+  _hasPistolData?: boolean;
+  _hasRoundData?: boolean;
 }
 
 export interface MicroMistake {
@@ -439,10 +444,6 @@ export class ScientificAnalyticsEngine {
   calculateTeamMetrics(team: GRIDTeam, games: GRIDGame[]): TeamPerformanceMetrics {
     let totalRounds = 0;
     let roundsWon = 0;
-    let attackRounds = 0;
-    let attackWins = 0;
-    let defenseRounds = 0;
-    let defenseWins = 0;
     let totalKills = 0;
     let totalDeaths = 0;
     let totalAssists = 0;
@@ -452,19 +453,31 @@ export class ScientificAnalyticsEngine {
       const teamData = game.teams.find(t => t.id === team.id);
       if (!teamData) continue;
       
-      totalKills += teamData.kills || 0;
-      totalDeaths += teamData.deaths || 0;
-      
-      // Sum player assists
+      // Sum player stats (kills, deaths, assists are at player level in GRID API)
       for (const player of teamData.players) {
+        totalKills += player.kills || 0;
+        totalDeaths += player.deaths || 0;
         totalAssists += player.assists || 0;
       }
       
-      // Round analysis would come from event data
-      totalRounds += (teamData.roundsWon || 0) + (teamData.roundsLost || 0);
-      roundsWon += teamData.roundsWon || 0;
-      attackRounds += teamData.attackRoundsWon || 0;
-      defenseRounds += teamData.defenseRoundsWon || 0;
+      // Round data - estimate from game score if available
+      // In Valorant, each map is typically first to 13 rounds
+      const teamScore = teamData.score || 0;
+      const opponentTeam = game.teams.find(t => t.id !== team.id);
+      const opponentScore = opponentTeam?.score || 0;
+      
+      if (teamScore > 0 || opponentScore > 0) {
+        totalRounds += teamScore + opponentScore;
+        roundsWon += teamScore;
+      }
+    }
+    
+    // If no round data available, estimate from series score
+    if (totalRounds === 0) {
+      const seriesScore = team.score || 0;
+      // Assume average game length of 24 rounds per map won
+      totalRounds = Math.max(24 * Math.max(seriesScore, 1), 24);
+      roundsWon = Math.round(totalRounds * 0.5);
     }
     
     // Calculate win rates using Wilson Score for confidence
@@ -474,27 +487,34 @@ export class ScientificAnalyticsEngine {
       ? (totalKills + totalAssists) / totalDeaths 
       : totalKills + totalAssists;
     
+    // Data availability flags - most detailed stats not available from basic API
+    const hasRoundData = totalRounds > 0 && roundsWon > 0;
+    
     return {
       teamId: team.id,
       teamName: team.name,
       totalRoundsPlayed: totalRounds,
       roundWinRate: roundWinStats.point,
-      attackWinRate: attackRounds > 0 ? attackWins / attackRounds : 0.5,
-      defenseWinRate: defenseRounds > 0 ? defenseWins / defenseRounds : 0.5,
-      pistolRoundWinRate: 0.5, // Need round-level data
-      econRoundWinRate: 0.5,
-      forceRoundWinRate: 0.5,
-      fullBuyWinRate: 0.5,
-      teamKillTradeRate: 0.5,
-      utilityCoordination: 0.5,
-      entrySuccess: 0.5,
-      strategyDiversity: 0.5,
-      adaptabilityScore: 0.5,
+      attackWinRate: 0.5, // Not available - would need round-level data
+      defenseWinRate: 0.5, // Not available - would need round-level data
+      pistolRoundWinRate: 0.5, // Not available - would need round-level data
+      econRoundWinRate: 0.5, // Not available - would need economy data
+      forceRoundWinRate: 0.5, // Not available - would need economy data
+      fullBuyWinRate: 0.5, // Not available - would need economy data
+      teamKillTradeRate: totalKills > 0 ? Math.min(totalKills / Math.max(totalDeaths, 1), 1) : 0.5,
+      utilityCoordination: 0.5, // Not available - would need event-level data
+      entrySuccess: 0.5, // Not available - would need first kill data
+      strategyDiversity: 0.5, // Not available - would need round strategy data
+      adaptabilityScore: 0.5, // Not available - would need historical data
       averageKDA,
       totalKills,
       totalDeaths,
       totalAssists,
-    };
+      // Data availability flags for UI
+      _hasAttackDefenseData: false,
+      _hasPistolData: false,
+      _hasRoundData: hasRoundData,
+    } as TeamPerformanceMetrics;
   }
   
   /**
@@ -625,6 +645,12 @@ export class ScientificAnalyticsEngine {
    * Calculate Strategy Debt from accumulated mistakes
    * Strategy Debt represents the accumulation of small mistakes that compound
    * to affect macro-level strategy execution
+   * 
+   * Debt is normalized to a 0-100 scale where:
+   * - 0-30: Healthy - minor issues, normal for any team
+   * - 30-60: Warning - notable patterns requiring attention
+   * - 60-80: High - significant issues affecting performance
+   * - 80-100: Critical - severe problems requiring immediate action
    */
   calculateStrategyDebt(
     mistakes: MicroMistake[],
@@ -641,19 +667,25 @@ export class ScientificAnalyticsEngine {
       mistakesByPlayer.set(mistake.playerId, existing);
     }
     
-    // Calculate individual player debt
+    // Calculate individual player debt (normalized per player)
     for (const [playerId, playerMistakes] of mistakesByPlayer) {
       const playerName = playerMistakes[0]?.playerName || playerId;
       const recurringMistakes = playerMistakes.filter(m => m.isRecurring);
       
       if (recurringMistakes.length > 0) {
-        const debtScore = recurringMistakes.reduce((sum, m) => {
+        // Normalize: each player contributes max ~20 points to total debt
+        const rawScore = recurringMistakes.reduce((sum, m) => {
           const severityMultiplier = 
             m.severity === 'critical' ? 4 :
             m.severity === 'high' ? 3 :
             m.severity === 'medium' ? 2 : 1;
-          return sum + m.occurrences * severityMultiplier;
+          // Cap occurrences contribution to prevent runaway values
+          const cappedOccurrences = Math.min(m.occurrences, 5);
+          return sum + cappedOccurrences * severityMultiplier;
         }, 0);
+        
+        // Normalize to max 20 points per player
+        const debtScore = Math.min(rawScore, 20);
         
         items.push({
           id: `debt-${playerId}`,

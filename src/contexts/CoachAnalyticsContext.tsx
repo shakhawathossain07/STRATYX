@@ -191,10 +191,10 @@ export const CoachAnalyticsProvider: React.FC<{ children: ReactNode }> = ({ chil
       console.log('Fetched real series state from GRID API:', seriesState.id);
       
       // Run analytics
-      const playerMetrics: PlayerPerformanceMetrics[] = [];
+      const playerMetricsMap: Map<string, PlayerPerformanceMetrics[]> = new Map();
       const allMistakes: MicroMistake[] = [];
       
-      // Calculate metrics for each game and player
+      // Calculate metrics for each game and player, collecting all game entries per player
       for (const game of seriesState.games) {
         const totalRounds = game.teams.reduce((sum, t) => sum + (t.roundsWon || 0), 0) || 20;
         
@@ -206,7 +206,11 @@ export const CoachAnalyticsProvider: React.FC<{ children: ReactNode }> = ({ chil
               game,
               totalRounds
             );
-            playerMetrics.push(metrics);
+            
+            // Aggregate by player ID to avoid duplicates
+            const existingMetrics = playerMetricsMap.get(player.id) || [];
+            existingMetrics.push(metrics);
+            playerMetricsMap.set(player.id, existingMetrics);
             
             // Detect mistakes
             const mistakes = analyticsEngine.detectMistakes(player, metrics, game.number);
@@ -214,6 +218,37 @@ export const CoachAnalyticsProvider: React.FC<{ children: ReactNode }> = ({ chil
           }
         }
       }
+      
+      // Aggregate player metrics across all games (average the stats)
+      const playerMetrics: PlayerPerformanceMetrics[] = [];
+      playerMetricsMap.forEach((metricsArray) => {
+        if (metricsArray.length === 0) return;
+        
+        // Average the metrics across all games
+        const aggregated: PlayerPerformanceMetrics = {
+          playerId: metricsArray[0].playerId,
+          playerName: metricsArray[0].playerName,
+          team: metricsArray[0].team,
+          role: metricsArray[0].role,
+          kda: metricsArray.reduce((sum, m) => sum + m.kda, 0) / metricsArray.length,
+          kdRatio: metricsArray.reduce((sum, m) => sum + m.kdRatio, 0) / metricsArray.length,
+          killsPerRound: metricsArray.reduce((sum, m) => sum + m.killsPerRound, 0) / metricsArray.length,
+          deathsPerRound: metricsArray.reduce((sum, m) => sum + m.deathsPerRound, 0) / metricsArray.length,
+          impactRating: metricsArray.reduce((sum, m) => sum + m.impactRating, 0) / metricsArray.length,
+          firstKillRate: metricsArray.reduce((sum, m) => sum + m.firstKillRate, 0) / metricsArray.length,
+          firstDeathRate: metricsArray.reduce((sum, m) => sum + m.firstDeathRate, 0) / metricsArray.length,
+          tradeDifferential: metricsArray.reduce((sum, m) => sum + m.tradeDifferential, 0) / metricsArray.length,
+          headshotPercentage: metricsArray.reduce((sum, m) => sum + m.headshotPercentage, 0) / metricsArray.length,
+          damagePerRound: metricsArray.reduce((sum, m) => sum + m.damagePerRound, 0) / metricsArray.length,
+          damageEfficiency: metricsArray.reduce((sum, m) => sum + m.damageEfficiency, 0) / metricsArray.length,
+          econRating: metricsArray.reduce((sum, m) => sum + m.econRating, 0) / metricsArray.length,
+          clutchSuccessRate: metricsArray.reduce((sum, m) => sum + m.clutchSuccessRate, 0) / metricsArray.length,
+          performanceVariance: metricsArray.reduce((sum, m) => sum + m.performanceVariance, 0) / metricsArray.length,
+          consistencyScore: metricsArray.reduce((sum, m) => sum + m.consistencyScore, 0) / metricsArray.length,
+          roleEffectiveness: metricsArray.reduce((sum, m) => sum + m.roleEffectiveness, 0) / metricsArray.length,
+        };
+        playerMetrics.push(aggregated);
+      });
       
       // Calculate team metrics
       const homeTeam = seriesState.teams[0];

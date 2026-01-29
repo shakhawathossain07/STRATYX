@@ -1,15 +1,17 @@
 /**
- * Coach Dashboard View
+ * Coach Dashboard View - 100% GRID API Verified Data
  * 
- * Main dashboard for the AI Assistant Coach showing:
+ * Main dashboard showing:
  * - Series selection from GRID API
- * - Real-time analytics and win probability
- * - Player performance metrics
- * - Coaching insights and recommendations
- * - Strategy Debt visualization
+ * - Real match scores and results
+ * - Player performance (kills, deaths, K/D)
+ * - Team comparison
+ * - Map breakdown
+ * 
+ * All data shown is directly from GRID API.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   AlertCircle,
   TrendingUp,
@@ -20,14 +22,12 @@ import {
   Database,
   ChevronRight,
   Brain,
-  Activity,
-  Shield,
-  AlertTriangle,
-  CheckCircle,
+  Award,
+  Map,
+  Crosshair,
   Info,
 } from 'lucide-react';
 import { useCoachAnalytics, GameType } from '../contexts/CoachAnalyticsContext';
-import { PlayerPerformanceMetrics, CoachingInsight, MicroMistake } from '../services/scientificAnalytics';
 
 interface CoachDashboardProps {
   onNavigate: (view: 'dashboard' | 'player-analysis' | 'strategy-debt') => void;
@@ -47,6 +47,101 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ onNavigate }) =>
     selectSeries,
     loadSeries,
   } = useCoachAnalytics();
+
+  // Extract real data from analyzed series
+  const matchData = useMemo(() => {
+    if (!analyzedSeries?.state) return null;
+
+    const state = analyzedSeries.state;
+    const teams = state.teams || [];
+    const games = state.games || [];
+
+    // Team data
+    const team1 = teams[0] || { id: '', name: 'Team 1', score: 0, won: false };
+    const team2 = teams[1] || { id: '', name: 'Team 2', score: 0, won: false };
+
+    // Calculate player stats from API data
+    const playerStats: Record<string, {
+      name: string;
+      teamId: string;
+      teamName: string;
+      kills: number;
+      deaths: number;
+      kd: number;
+      characters: string[];
+    }> = {};
+
+    games.forEach(game => {
+      game.teams.forEach(gameTeam => {
+        const teamName = teams.find(t => t.id === gameTeam.id)?.name || gameTeam.name || 'Unknown';
+        
+        gameTeam.players.forEach(player => {
+          if (!playerStats[player.id]) {
+            playerStats[player.id] = {
+              name: player.name,
+              teamId: gameTeam.id,
+              teamName,
+              kills: 0,
+              deaths: 0,
+              kd: 0,
+              characters: [],
+            };
+          }
+          playerStats[player.id].kills += player.kills || 0;
+          playerStats[player.id].deaths += player.deaths || 0;
+          
+          const charName = typeof player.character === 'object' 
+            ? player.character?.name 
+            : player.character;
+          if (charName && !playerStats[player.id].characters.includes(charName)) {
+            playerStats[player.id].characters.push(charName);
+          }
+        });
+      });
+    });
+
+    // Calculate K/D ratios
+    Object.values(playerStats).forEach(p => {
+      p.kd = p.deaths > 0 ? p.kills / p.deaths : p.kills;
+    });
+
+    // Team totals
+    const team1Players = Object.values(playerStats).filter(p => p.teamId === team1.id);
+    const team2Players = Object.values(playerStats).filter(p => p.teamId === team2.id);
+    
+    const team1Kills = team1Players.reduce((sum, p) => sum + p.kills, 0);
+    const team1Deaths = team1Players.reduce((sum, p) => sum + p.deaths, 0);
+    const team2Kills = team2Players.reduce((sum, p) => sum + p.kills, 0);
+    const team2Deaths = team2Players.reduce((sum, p) => sum + p.deaths, 0);
+
+    // Map breakdown
+    const mapBreakdown = games.map((game, idx) => {
+      const mapName = typeof game.map === 'object' ? game.map?.name : game.map;
+      const t1 = game.teams.find(t => t.id === team1.id);
+      const t2 = game.teams.find(t => t.id === team2.id);
+      
+      return {
+        name: mapName || `Map ${idx + 1}`,
+        team1Score: t1?.score || 0,
+        team2Score: t2?.score || 0,
+        team1Won: t1?.won || false,
+      };
+    });
+
+    return {
+      team1,
+      team2,
+      team1Kills,
+      team1Deaths,
+      team2Kills,
+      team2Deaths,
+      team1KD: team1Deaths > 0 ? team1Kills / team1Deaths : team1Kills,
+      team2KD: team2Deaths > 0 ? team2Kills / team2Deaths : team2Kills,
+      players: Object.values(playerStats).sort((a, b) => b.kd - a.kd),
+      mapBreakdown,
+      mapsPlayed: games.length,
+    };
+  }, [analyzedSeries]);
 
   return (
     <div className="space-y-6">
@@ -131,283 +226,269 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ onNavigate }) =>
         )}
       </div>
 
-      {/* Selected Series Header (Always Visible When Selected) */}
+      {/* Selected Series Header */}
       {selectedSeries && (
         <div className="bg-surface border border-slate-800 rounded-xl p-6 relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0" />
-             
-             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-               <div className="flex items-center gap-4 flex-1 justify-end">
-                 <div className="text-right">
-                   <h2 className="text-xl font-bold text-slate-100">{selectedSeries.teams[0]?.baseInfo.name || 'Team A'}</h2>
-                   <p className="text-xs text-slate-500">Home</p>
-                 </div>
-                 <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-700 p-2">
-                   {selectedSeries.teams[0]?.baseInfo.logoUrl ? (
-                     <img src={selectedSeries.teams[0].baseInfo.logoUrl} alt="Team A" className="w-full h-full object-contain" />
-                   ) : (
-                     <span className="text-2xl font-bold text-slate-600">A</span>
-                   )}
-                 </div>
-               </div>
-   
-               <div className="flex flex-col items-center justify-center px-8">
-                 <div className="text-3xl font-black text-white tracking-widest bg-slate-900/50 px-6 py-2 rounded-lg border border-slate-700">
-                    VS
-                 </div>
-                 <div className="mt-2 flex flex-col items-center">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-primary">
-                       MATCH ANALYSIS
-                    </span>
-                    <span className="text-[10px] text-slate-500">
-                      {new Date(selectedSeries.startTimeScheduled).toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-slate-600 mt-1">{selectedSeries.tournament?.name}</span>
-                 </div>
-               </div>
-   
-               <div className="flex items-center gap-4 flex-1 justify-start">
-                 <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-700 p-2">
-                   {selectedSeries.teams[1]?.baseInfo.logoUrl ? (
-                     <img src={selectedSeries.teams[1].baseInfo.logoUrl} alt="Team B" className="w-full h-full object-contain" />
-                   ) : (
-                     <span className="text-2xl font-bold text-slate-600">B</span>
-                   )}
-                 </div>
-                 <div className="text-left">
-                   <h2 className="text-xl font-bold text-slate-100">{selectedSeries.teams[1]?.baseInfo.name || 'Team B'}</h2>
-                   <p className="text-xs text-slate-500">Away</p>
-                 </div>
-               </div>
-             </div>
-           </div>
-      )}
-
-      {/* Analysis Results */}
-      {analyzedSeries ? (
-        <>
-          {/* Key Metrics Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MetricCard
-              icon={<Target className="text-primary" />}
-              label="Win Probability"
-              value={`${(analyzedSeries.winProbability.probability * 100).toFixed(1)}%`}
-              subValue={`±${((1 - analyzedSeries.winProbability.confidence) * 10).toFixed(1)}% margin`}
-              trend={analyzedSeries.winProbability.probability > 0.5 ? 'up' : 'down'}
-            />
-            <MetricCard
-              icon={<Shield className="text-amber-500" />}
-              label="Strategy Debt"
-              value={analyzedSeries.strategyDebt.totalDebt.toFixed(1)}
-              subValue={analyzedSeries.strategyDebt.totalDebt > 70 ? 'Critical' : analyzedSeries.strategyDebt.totalDebt > 40 ? 'Warning' : 'Healthy'}
-              trend={analyzedSeries.strategyDebt.totalDebt > 50 ? 'down' : 'up'}
-            />
-            <MetricCard
-              icon={<AlertTriangle className="text-red-500" />}
-              label="Issues Detected"
-              value={analyzedSeries.mistakes.length.toString()}
-              subValue={`${analyzedSeries.mistakes.filter(m => m.severity === 'critical').length} critical`}
-            />
-            <MetricCard
-              icon={<Brain className="text-green-500" />}
-              label="Insights"
-              value={analyzedSeries.insights.length.toString()}
-              subValue={`${analyzedSeries.insights.filter(i => i.priority === 'high' || i.priority === 'critical').length} priority`}
-            />
-          </div>
-
-          {/* Win Probability Breakdown */}
-          <div className="bg-surface border border-slate-800 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                <Activity size={20} className="text-primary" />
-                Win Probability Analysis
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500">Confidence:</span>
-                <span className="text-sm font-bold text-primary">
-                  {(analyzedSeries.winProbability.confidence * 100).toFixed(0)}%
-                </span>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0" />
+          
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4 flex-1 justify-end">
+              <div className="text-right">
+                <h2 className="text-xl font-bold text-slate-100">{selectedSeries.teams[0]?.baseInfo.name || 'Team A'}</h2>
+                <p className="text-xs text-slate-500">Home</p>
               </div>
-            </div>
-
-            <div className="mb-6">
-              {/* Win Probability Bar */}
-              <div className="relative h-8 bg-slate-800 rounded-full overflow-hidden mb-2">
-                <div
-                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-primary to-green-500 transition-all duration-500"
-                  style={{ width: `${analyzedSeries.winProbability.probability * 100}%` }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-bold text-white drop-shadow-md">
-                    {analyzedSeries.state?.teams[0]?.name}: {(analyzedSeries.winProbability.probability * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>{analyzedSeries.state?.teams[0]?.name}</span>
-                <span>{analyzedSeries.state?.teams[1]?.name}</span>
-              </div>
-            </div>
-
-            {/* Contributing Factors */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {analyzedSeries.winProbability.factors.map((factor, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3 rounded-lg border ${
-                    factor.contribution > 0
-                      ? 'bg-green-500/10 border-green-500/30'
-                      : factor.contribution < 0
-                      ? 'bg-red-500/10 border-red-500/30'
-                      : 'bg-slate-800/50 border-slate-700'
-                  }`}
-                >
-                  <p className="text-xs text-slate-400 mb-1">{factor.name}</p>
-                  <p className={`text-sm font-bold ${
-                    factor.contribution > 0 ? 'text-green-400' : factor.contribution < 0 ? 'text-red-400' : 'text-slate-300'
-                  }`}>
-                    {factor.contribution > 0 ? '+' : ''}{(factor.contribution * 100).toFixed(1)}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Coaching Insights */}
-            <div className="bg-surface border border-slate-800 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
-                <Brain size={20} className="text-primary" />
-                AI Coaching Insights
-              </h3>
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {analyzedSeries.insights.map((insight) => (
-                  <InsightCard key={insight.id} insight={insight} />
-                ))}
-                {analyzedSeries.insights.length === 0 && (
-                  <p className="text-slate-500 text-sm text-center py-4">
-                    No critical insights detected
-                  </p>
+              <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-700 p-2">
+                {selectedSeries.teams[0]?.baseInfo.logoUrl ? (
+                  <img src={selectedSeries.teams[0].baseInfo.logoUrl} alt="Team A" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-2xl font-bold text-slate-600">A</span>
                 )}
               </div>
             </div>
 
-            {/* Strategy Debt Breakdown */}
-            <div className="bg-surface border border-slate-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                  <Shield size={20} className="text-amber-500" />
-                  Strategy Debt™ Analysis
-                </h3>
-                <button 
-                  onClick={() => onNavigate('strategy-debt')}
-                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-                >
-                  Deep Dive <ChevronRight size={12} />
-                </button>
+            <div className="flex flex-col items-center justify-center px-8">
+              <div className="text-3xl font-black text-white tracking-widest bg-slate-900/50 px-6 py-2 rounded-lg border border-slate-700">
+                VS
+              </div>
+              <div className="mt-2 flex flex-col items-center">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-primary">
+                  MATCH ANALYSIS
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  {new Date(selectedSeries.startTimeScheduled).toLocaleString()}
+                </span>
+                <span className="text-[10px] text-slate-600 mt-1">{selectedSeries.tournament?.name}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 flex-1 justify-start">
+              <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-700 p-2">
+                {selectedSeries.teams[1]?.baseInfo.logoUrl ? (
+                  <img src={selectedSeries.teams[1].baseInfo.logoUrl} alt="Team B" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-2xl font-bold text-slate-600">B</span>
+                )}
+              </div>
+              <div className="text-left">
+                <h2 className="text-xl font-bold text-slate-100">{selectedSeries.teams[1]?.baseInfo.name || 'Team B'}</h2>
+                <p className="text-xs text-slate-500">Away</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Analysis Results */}
+      {matchData ? (
+        <>
+          {/* Data Source Badge */}
+          <div className="flex justify-end">
+            <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span className="text-xs text-green-400">100% GRID API Data</span>
+            </div>
+          </div>
+
+          {/* Series Score */}
+          <div className="bg-surface border border-slate-800 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
+              <Award size={20} className="text-amber-400" />
+              Series Result
+            </h3>
+            
+            <div className="flex items-center justify-center gap-8">
+              <div className={`text-center ${matchData.team1.won ? 'opacity-100' : 'opacity-60'}`}>
+                <p className="text-sm text-slate-400 mb-2">{matchData.team1.name}</p>
+                <p className={`text-5xl font-bold ${matchData.team1.won ? 'text-green-400' : 'text-slate-400'}`}>
+                  {matchData.team1.score}
+                </p>
+                {matchData.team1.won && (
+                  <span className="text-xs text-green-400 uppercase font-bold mt-2 inline-block">Winner</span>
+                )}
               </div>
               
-              {/* Debt Meter */}
-              <div className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <span className="text-xs text-slate-400">Accumulated Debt</span>
-                  <span className={`text-sm font-bold ${
-                    analyzedSeries.strategyDebt.totalDebt > 70 ? 'text-red-400' :
-                    analyzedSeries.strategyDebt.totalDebt > 40 ? 'text-amber-400' : 'text-green-400'
-                  }`}>
-                    {analyzedSeries.strategyDebt.totalDebt.toFixed(1)} / 100
-                  </span>
-                </div>
-                <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-500 ${
-                      analyzedSeries.strategyDebt.totalDebt > 70 ? 'bg-red-500' :
-                      analyzedSeries.strategyDebt.totalDebt > 40 ? 'bg-amber-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${analyzedSeries.strategyDebt.totalDebt}%` }}
-                  />
-                </div>
+              <div className="text-2xl text-slate-600 font-bold">-</div>
+              
+              <div className={`text-center ${matchData.team2.won ? 'opacity-100' : 'opacity-60'}`}>
+                <p className="text-sm text-slate-400 mb-2">{matchData.team2.name}</p>
+                <p className={`text-5xl font-bold ${matchData.team2.won ? 'text-green-400' : 'text-slate-400'}`}>
+                  {matchData.team2.score}
+                </p>
+                {matchData.team2.won && (
+                  <span className="text-xs text-green-400 uppercase font-bold mt-2 inline-block">Winner</span>
+                )}
               </div>
+            </div>
+          </div>
 
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {analyzedSeries.strategyDebt.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3 rounded-lg bg-slate-800/50 border border-slate-700"
+          {/* Key Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard
+              icon={<Crosshair className="text-green-400" />}
+              label="Team 1 Kills"
+              value={matchData.team1Kills.toString()}
+              teamName={matchData.team1.name}
+            />
+            <StatCard
+              icon={<Crosshair className="text-green-400" />}
+              label="Team 2 Kills"
+              value={matchData.team2Kills.toString()}
+              teamName={matchData.team2.name}
+            />
+            <StatCard
+              icon={<Target className="text-primary" />}
+              label="Team 1 K/D"
+              value={matchData.team1KD.toFixed(2)}
+              teamName={matchData.team1.name}
+              isPositive={matchData.team1KD >= 1}
+            />
+            <StatCard
+              icon={<Target className="text-primary" />}
+              label="Team 2 K/D"
+              value={matchData.team2KD.toFixed(2)}
+              teamName={matchData.team2.name}
+              isPositive={matchData.team2KD >= 1}
+            />
+          </div>
+
+          {/* Map Breakdown */}
+          {matchData.mapBreakdown.length > 0 && (
+            <div className="bg-surface border border-slate-800 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
+                <Map size={20} className="text-primary" />
+                Map Breakdown
+              </h3>
+              <div className="grid gap-3">
+                {matchData.mapBreakdown.map((map, idx) => (
+                  <div 
+                    key={idx}
+                    className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50 border border-slate-700"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-slate-200">{item.source}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        item.category === 'individual' ? 'bg-blue-500/20 text-blue-400' :
-                        item.category === 'team' ? 'bg-purple-500/20 text-purple-400' :
-                        'bg-amber-500/20 text-amber-400'
-                      }`}>
-                        {item.category}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-500 font-mono">MAP {idx + 1}</span>
+                      <span className="font-medium text-white">{map.name}</span>
                     </div>
-                    <p className="text-xs text-slate-400 mb-2">{item.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">
-                        Debt: <span className="text-amber-400 font-medium">{item.debtScore.toFixed(1)}</span>
+                    <div className="flex items-center gap-4">
+                      <span className={`text-lg font-bold ${map.team1Won ? 'text-green-400' : 'text-slate-400'}`}>
+                        {map.team1Score}
                       </span>
-                      <span className="text-xs text-slate-500">
-                        Freq: {item.frequency}x
+                      <span className="text-slate-600">-</span>
+                      <span className={`text-lg font-bold ${!map.team1Won ? 'text-green-400' : 'text-slate-400'}`}>
+                        {map.team2Score}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Player Performance Table */}
           <div className="bg-surface border border-slate-800 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
-              <Users size={20} className="text-primary" />
-              Player Performance Metrics
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <Users size={20} className="text-primary" />
+                Player Performance
+              </h3>
+              <button 
+                onClick={() => onNavigate('player-analysis')}
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+              >
+                Full Analysis <ChevronRight size={12} />
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-slate-400 border-b border-slate-700">
-                    <th className="pb-3 pl-2">Player</th>
-                    <th className="pb-3 text-center">Team</th>
-                    <th className="pb-3 text-center">K/D/A</th>
-                    <th className="pb-3 text-center">KDA Ratio</th>
-                    <th className="pb-3 text-center">Impact</th>
-                    <th className="pb-3 text-center">FK Rate</th>
-                    <th className="pb-3 text-center">HS%</th>
-                    <th className="pb-3 text-center">ADR</th>
+                    <th className="pb-3 pl-2">#</th>
+                    <th className="pb-3">Player</th>
+                    <th className="pb-3">Team</th>
+                    <th className="pb-3 text-center">Kills</th>
+                    <th className="pb-3 text-center">Deaths</th>
+                    <th className="pb-3 text-center">K/D</th>
+                    <th className="pb-3">Agents</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {analyzedSeries.playerMetrics
-                    .sort((a, b) => b.impactRating - a.impactRating)
-                    .map((player) => (
-                      <PlayerRow key={player.playerId} player={player} />
-                    ))}
+                  {matchData.players.slice(0, 10).map((player, idx) => (
+                    <tr key={player.name + idx} className="border-b border-slate-800 hover:bg-slate-800/50">
+                      <td className="py-3 pl-2 text-slate-500 font-mono">{idx + 1}</td>
+                      <td className="py-3">
+                        <span className="font-medium text-slate-200">{player.name}</span>
+                      </td>
+                      <td className="py-3 text-slate-400">{player.teamName}</td>
+                      <td className="py-3 text-center text-green-400 font-medium">{player.kills}</td>
+                      <td className="py-3 text-center text-red-400 font-medium">{player.deaths}</td>
+                      <td className="py-3 text-center">
+                        <span className={`font-bold ${
+                          player.kd >= 1.5 ? 'text-green-400' : 
+                          player.kd >= 1 ? 'text-amber-400' : 'text-red-400'
+                        }`}>
+                          {player.kd.toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <div className="flex gap-1 flex-wrap">
+                          {player.characters.map((char, cIdx) => (
+                            <span 
+                              key={cIdx}
+                              className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded"
+                            >
+                              {char}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Detected Mistakes */}
-          <div className="bg-surface border border-slate-800 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
-              <AlertTriangle size={20} className="text-red-500" />
-              Detected Issues & Mistakes
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {analyzedSeries.mistakes
-                .sort((a, b) => {
-                  const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-                  return severityOrder[a.severity] - severityOrder[b.severity];
-                })
-                .slice(0, 6)
-                .map((mistake) => (
-                  <MistakeCard key={mistake.id} mistake={mistake} />
-                ))}
+          {/* Navigation Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => onNavigate('player-analysis')}
+              className="bg-surface border border-slate-800 rounded-xl p-6 text-left hover:border-primary/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <Users size={24} className="text-primary" />
+                <h3 className="text-lg font-bold text-slate-100">Player Analysis</h3>
+                <ChevronRight size={16} className="text-slate-500 ml-auto group-hover:text-primary transition-colors" />
+              </div>
+              <p className="text-sm text-slate-400">
+                Detailed per-player stats, per-map breakdowns, and agent performance.
+              </p>
+            </button>
+            
+            <button
+              onClick={() => onNavigate('strategy-debt')}
+              className="bg-surface border border-slate-800 rounded-xl p-6 text-left hover:border-primary/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <Brain size={24} className="text-amber-400" />
+                <h3 className="text-lg font-bold text-slate-100">Coach Insights</h3>
+                <ChevronRight size={16} className="text-slate-500 ml-auto group-hover:text-primary transition-colors" />
+              </div>
+              <p className="text-sm text-slate-400">
+                AI-generated insights based on K/D analysis and map performance.
+              </p>
+            </button>
+          </div>
+
+          {/* Data Info */}
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <Info size={18} className="text-blue-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-slate-300 font-medium">Data Source: GRID Esports API</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  All statistics displayed are sourced directly from the GRID Series State API.
+                  Available fields: kills, deaths, character/agent, map names, team scores, and win/loss status.
+                </p>
+              </div>
             </div>
           </div>
         </>
@@ -415,13 +496,13 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ onNavigate }) =>
         <div className="bg-surface border border-slate-800 rounded-xl p-12 text-center">
           <RefreshCw size={48} className="text-primary animate-spin mx-auto mb-4" />
           <h3 className="text-lg font-bold text-slate-100 mb-2">Analyzing Match Data</h3>
-          <p className="text-slate-400">Running scientific analytics on player and team performance...</p>
+          <p className="text-slate-400">Fetching data from GRID API...</p>
         </div>
       ) : (
         <div className="bg-surface border border-slate-800 rounded-xl p-12 text-center">
           <Brain size={48} className="text-slate-600 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-slate-100 mb-2">Select a Match to Analyze</h3>
-          <p className="text-slate-400">Choose a series above to view comprehensive AI-powered coaching insights</p>
+          <p className="text-slate-400">Choose a series above to view match statistics</p>
         </div>
       )}
 
@@ -443,155 +524,28 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ onNavigate }) =>
 // HELPER COMPONENTS
 // =====================================================
 
-const MetricCard: React.FC<{
+const StatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
   value: string;
-  subValue: string;
-  trend?: 'up' | 'down';
-}> = ({ icon, label, value, subValue, trend }) => (
+  teamName: string;
+  isPositive?: boolean;
+}> = ({ icon, label, value, teamName, isPositive }) => (
   <div className="bg-surface border border-slate-800 rounded-xl p-4">
     <div className="flex items-center justify-between mb-2">
       <div className="p-2 rounded-lg bg-slate-800">{icon}</div>
-      {trend && (
-        trend === 'up' 
+      {isPositive !== undefined && (
+        isPositive 
           ? <TrendingUp size={16} className="text-green-400" />
           : <TrendingDown size={16} className="text-red-400" />
       )}
     </div>
-    <p className="text-2xl font-bold text-white mb-1">{value}</p>
+    <p className={`text-2xl font-bold ${isPositive === undefined ? 'text-white' : isPositive ? 'text-green-400' : 'text-red-400'}`}>
+      {value}
+    </p>
     <p className="text-xs text-slate-400">{label}</p>
-    <p className="text-[10px] text-slate-500 mt-1">{subValue}</p>
+    <p className="text-[10px] text-slate-500 mt-1">{teamName}</p>
   </div>
 );
-
-const InsightCard: React.FC<{ insight: CoachingInsight }> = ({ insight }) => {
-  const priorityStyles = {
-    critical: 'border-red-500/50 bg-red-500/10',
-    high: 'border-amber-500/50 bg-amber-500/10',
-    medium: 'border-blue-500/50 bg-blue-500/10',
-    low: 'border-slate-600 bg-slate-800/50',
-  };
-
-  const priorityIcons = {
-    critical: <AlertCircle size={16} className="text-red-400" />,
-    high: <AlertTriangle size={16} className="text-amber-400" />,
-    medium: <Info size={16} className="text-blue-400" />,
-    low: <CheckCircle size={16} className="text-slate-400" />,
-  };
-
-  return (
-    <div className={`p-3 rounded-lg border ${priorityStyles[insight.priority]}`}>
-      <div className="flex items-start gap-2 mb-2">
-        {priorityIcons[insight.priority]}
-        <div className="flex-1">
-          <p className="text-sm font-medium text-slate-200">{insight.title}</p>
-          <p className="text-xs text-slate-400 mt-1">{insight.description}</p>
-        </div>
-        <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300">
-          {(insight.confidence * 100).toFixed(0)}%
-        </span>
-      </div>
-      {insight.recommendedActions.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-slate-700">
-          <p className="text-xs text-slate-500 mb-1">Recommended Actions:</p>
-          <ul className="text-xs text-slate-400 space-y-1">
-            {insight.recommendedActions.slice(0, 2).map((action, idx) => (
-              <li key={idx} className="flex items-start gap-1">
-                <ChevronRight size={12} className="mt-0.5 shrink-0" />
-                {action}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const PlayerRow: React.FC<{ player: PlayerPerformanceMetrics }> = ({ player }) => {
-  const impactColor = player.impactRating > 70 
-    ? 'text-green-400' 
-    : player.impactRating > 50 
-    ? 'text-amber-400' 
-    : 'text-red-400';
-
-  return (
-    <tr className="border-b border-slate-800 hover:bg-slate-800/50">
-      <td className="py-3 pl-2">
-        <span className="font-medium text-slate-200">{player.playerName}</span>
-      </td>
-      <td className="py-3 text-center text-slate-400">{player.team}</td>
-      <td className="py-3 text-center">
-        <span className="text-green-400">{Math.round(player.kda * player.deathsPerRound * 20)}</span>
-        <span className="text-slate-600">/</span>
-        <span className="text-red-400">{Math.round(player.deathsPerRound * 20)}</span>
-        <span className="text-slate-600">/</span>
-        <span className="text-blue-400">{Math.round((player.kda - player.kdRatio) * player.deathsPerRound * 20)}</span>
-      </td>
-      <td className="py-3 text-center">
-        <span className={player.kda >= 1.5 ? 'text-green-400' : player.kda >= 1 ? 'text-amber-400' : 'text-red-400'}>
-          {player.kda.toFixed(2)}
-        </span>
-      </td>
-      <td className="py-3 text-center">
-        <span className={`font-bold ${impactColor}`}>
-          {player.impactRating.toFixed(1)}
-        </span>
-      </td>
-      <td className="py-3 text-center">
-        <span className={player.firstKillRate > 0.15 ? 'text-green-400' : 'text-slate-400'}>
-          {(player.firstKillRate * 100).toFixed(1)}%
-        </span>
-      </td>
-      <td className="py-3 text-center">
-        <span className={player.headshotPercentage > 0.3 ? 'text-green-400' : 'text-slate-400'}>
-          {(player.headshotPercentage * 100).toFixed(1)}%
-        </span>
-      </td>
-      <td className="py-3 text-center">
-        <span className={player.damagePerRound > 150 ? 'text-green-400' : 'text-slate-400'}>
-          {player.damagePerRound.toFixed(1)}
-        </span>
-      </td>
-    </tr>
-  );
-};
-
-const MistakeCard: React.FC<{ mistake: MicroMistake }> = ({ mistake }) => {
-  const severityStyles = {
-    critical: 'border-red-500/50 bg-red-500/10',
-    high: 'border-amber-500/50 bg-amber-500/10',
-    medium: 'border-blue-500/50 bg-blue-500/10',
-    low: 'border-slate-600 bg-slate-800/50',
-  };
-
-  return (
-    <div className={`p-3 rounded-lg border ${severityStyles[mistake.severity]}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-slate-200">{mistake.playerName}</span>
-        <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${
-          mistake.severity === 'critical' ? 'bg-red-500/30 text-red-400' :
-          mistake.severity === 'high' ? 'bg-amber-500/30 text-amber-400' :
-          'bg-blue-500/30 text-blue-400'
-        }`}>
-          {mistake.severity}
-        </span>
-      </div>
-      <p className="text-xs text-slate-400 mb-2">{mistake.description}</p>
-      <div className="flex items-center gap-4 text-xs">
-        <span className="text-slate-500">
-          Impact: <span className="text-red-400">{(mistake.probabilityImpact * 100).toFixed(1)}%</span>
-        </span>
-        <span className="text-slate-500">
-          Occurrences: <span className="text-amber-400">{mistake.occurrences}</span>
-        </span>
-      </div>
-      <div className="mt-2 pt-2 border-t border-slate-700">
-        <p className="text-xs text-slate-500">{mistake.macroImpact.description}</p>
-      </div>
-    </div>
-  );
-};
 
 export default CoachDashboard;

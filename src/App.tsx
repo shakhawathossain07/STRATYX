@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Layout } from './components/Layout'
 import { CoachDashboard } from './views/CoachDashboard'
 import { PlayerAnalysisView } from './views/PlayerAnalysisView'
-import { StrategyDebtDetail } from './views/StrategyDebtDetail'
+import { CoachInsightsView } from './views/CoachInsightsView'
 import { StratyxProvider } from './contexts/StratyxContext'
 import { CoachAnalyticsProvider } from './contexts/CoachAnalyticsContext'
 
@@ -18,7 +18,7 @@ function App() {
       case 'player-analysis':
         return <PlayerAnalysisView />;
       case 'strategy-debt':
-        return <StrategyDebtDetail onNavigate={setCurrentView} />;
+        return <CoachInsightsView onNavigate={setCurrentView} />;
       default:
         return <CoachDashboard onNavigate={setCurrentView} />;
     }

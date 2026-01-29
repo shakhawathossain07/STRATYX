@@ -1,298 +1,99 @@
-# STRATYX: GRID-Powered Causal AI Assistant Coach for Esports
+# STRATYX
 
-> **A next-generation AI coaching platform that transforms esports data into causal, actionable strategy intelligence.**
+STRATYX is a data-driven assistant coach for esports teams. It uses official GRID APIs to pull real match data and turn it into actionable coaching insights inside a single React dashboard.
 
-STRATYX uses official GRID APIs to analyze live and historical match data, explaining **why** teams lose or win, not merely **what** happened. It introduces causal reasoning to esports coaching, connecting micro-level player decisions directly to macro-level strategic outcomes.
+## What this app does
+- Pulls real series data from GRID Central Data and Series State APIs
+- Lets coaches select matches by game (Valorant, LoL; CS2 and Dota2 currently fall back to Valorant series)
+- Shows live scoreboards, map breakdowns, and player K/D stats
+- Provides a player analysis view with sortable tables and per-map performance
+- Generates coaching insights based on verified match stats
+- Shows API health checks and settings in-app
+- Includes a 3D assistant panel with optional background audio
 
-![Status](https://img.shields.io/badge/status-production%20ready-green)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue)
-![React](https://img.shields.io/badge/React-18.2-blue)
-![GRID API](https://img.shields.io/badge/GRID%20API-Official-purple)
+## Views
+- Live Dashboard
+- Coach Insights
+- Player Analysis
 
----
+## Data sources
+- Central Data GraphQL
+- Series State GraphQL
+- File Download API (optional, used for event and end-state downloads)
 
-## 🚀 Quick Start
+All displayed match stats (kills, deaths, maps, scores) come directly from GRID data. Derived metrics (K/D, win probability, strategy debt) are calculated locally and labeled as analysis.
 
+## Tech stack
+- React 18, TypeScript, Vite
+- Tailwind CSS
+- Apollo Client (GraphQL)
+- Recharts
+- three.js (3D assistant)
+
+## Getting started
 ```bash
-# Install dependencies
 npm install
-
-# Copy env template and add your GRID API key
 cp .env.example .env
+```
 
-# Start development server
+Add your GRID API key to `.env`:
+```env
+VITE_GRID_API_KEY=your_key_here
+```
+
+Run the app:
+```bash
 npm run dev
 ```
 
-**The application will be available at:** `http://localhost:5173`
+App runs at `http://localhost:5173`.
 
-📖 **For detailed setup instructions, see [SETUP.md](./SETUP.md)**
+## Scripts
+- `npm run dev`
+- `npm run build`
+- `npm run preview`
+- `npm run lint`
 
----
-
-## 🎯 Core Innovations
-
-### 1. Causal Strategy Graph (CSG)
-Unlike traditional analytics that show *what* happened, CSG explains *why*:
-- Maps micro-player decisions to macro outcomes
-- Estimates causal influence between actions
-- Time-aware directed graph per match phase
-- Answers: *"Which exact player behavior caused this strategic collapse?"*
-
-### 2. Strategy Debt™ (Original Metric)
-Quantifies accumulated strategic disadvantage from repeated suboptimal micro-decisions:
-- Tracked per player, phase, and series
-- Critical threshold alerts (>75 = macro collapse risk)
-- Phase breakdown (early/mid/late game)
-- Enables coaches to **prioritize what to fix first**
-
-### 3. Bayesian Win Probability
-Real-time win probability estimation with:
-- Multi-factor decomposition (economy, man advantage, objectives, debt)
-- Confidence scoring
-- Monte Carlo simulation for uncertainty quantification
-- Counterfactual "what-if" scenarios
-
-### 4. Pattern Detection
-AI-powered identification of:
-- Recurring mistakes (with occurrence tracking)
-- Success sequences
-- Phase-specific vulnerabilities
-- Player-specific behavioral patterns
-
----
-
-## 🏗️ Architecture
-
-```text
-┌─────────────────────────────────────────┐
-│           GRID Official APIs            │
-│  ┌─────────────────────────────────┐   │
-│  │ Central Data Feed (GraphQL)     │   │
-│  │ Series State API (GraphQL)      │   │
-│  │ Series Events API (WebSocket)   │   │
-│  └─────────────────────────────────┘   │
-└──────────────────┬──────────────────────┘
-                   │
-        ┌──────────▼──────────┐
-        │  Event Ingestion    │
-        │  & Normalization    │
-        └──────────┬──────────┘
-                   │
-    ┌──────────────▼──────────────┐
-    │   Temporal Feature Store    │
-    └──────────────┬──────────────┘
-                   │
-    ┌──────────────▼──────────────────────┐
-    │   AI & Data Science Layer           │
-    │  ┌────────────────────────────────┐ │
-    │  │ Causal Strategy Graph Engine   │ │
-    │  │ Win Probability Model          │ │
-    │  │ Pattern Analyzer               │ │
-    │  │ Counterfactual Simulator       │ │
-    │  └────────────────────────────────┘ │
-    └──────────────┬──────────────────────┘
-                   │
-        ┌──────────▼──────────┐
-        │   Insights API      │
-        └──────────┬──────────┘
-                   │
-        ┌──────────▼──────────┐
-        │  React Frontend     │
-        │   (STRATYX UI)      │
-        └─────────────────────┘
-```
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technologies |
-|-------|-------------|
-| **Frontend** | React 18, TypeScript, Tailwind CSS |
-| **Data Source** | Official GRID APIs (GraphQL, WebSocket) |
-| **State Management** | React Context API |
-| **Visualization** | Recharts, Lucide React |
-| **AI/ML** | Causal Inference, Bayesian Models, Pattern Detection |
-| **Build** | Vite |
-
----
-
-## 📊 Features
-
-### Live Match Intelligence Dashboard
-- Real-time win probability tracking
-- Causal graph visualization
-- Strategy debt monitoring
-- Impact-ranked recommendations
-- Macro collapse alerts
-
-### Player Analysis View
-- Individual performance metrics
-- Risk scoring (0-100)
-- Recurring mistake detection
-- Strength identification
-- Sortable and filterable
-
-### Strategy Debt™ Detail View
-- Debt accumulation timeline
-- Top contributors breakdown
-- Phase-specific analysis
-- Priority recommendations
-- Counterfactual scenarios
-
----
-
-## 📁 Project Structure
-
-```
-stratyx/
-├── src/
-│   ├── components/          # Reusable UI components
-│   │   ├── CausalGraph.tsx
-│   │   ├── PhaseAnalyzer.tsx
-│   │   ├── PlayerImpactCard.tsx
-│   │   ├── StrategyDebtMeter.tsx
-│   │   └── WinProbabilityChart.tsx
-│   ├── services/            # Core AI/ML engines
-│   │   ├── causalEngine.ts       # Causal reasoning
-│   │   ├── featureStore.ts       # Temporal data storage
-│   │   ├── patternAnalyzer.ts    # Pattern detection
-│   │   ├── winProbability.ts     # Bayesian model
-│   │   ├── eventStream.ts        # WebSocket handler
-│   │   └── gridApi.ts            # GRID API client
-│   ├── views/               # Main application views
-│   │   ├── Dashboard.tsx
-│   │   ├── PlayerAnalysis.tsx
-│   │   └── StrategyDebtDetail.tsx
-│   ├── contexts/            # React Context
-│   │   └── StratyxContext.tsx
-│   └── config/              # Configuration
-│       └── index.ts
-├── .env                     # Environment variables (local, do not commit)
-├── .env.example             # Template
-└── SETUP.md                 # Detailed setup guide
-```
-
----
-
-## 🔑 GRID API Integration
-
-### Authentication
-- **HTTP (GraphQL):** Uses `x-api-key` header
-- **WebSocket (Live Events):** Uses URL parameter `?key=YOUR_KEY`
-- Set your API key in `.env`
-
-### Endpoints Used
-```typescript
-// Central Data Feed
-https://api.grid.gg/central-data/graphql
-
-// Series State
-https://api.grid.gg/series-state/graphql
-
-// Live Events (WebSocket)
-wss://api.grid.gg/series-events/v1/{seriesId}?key={apiKey}
-```
-
----
-
-## 🎮 Available Views
-
-| View | Route | Description |
-|------|-------|-------------|
-| Live Dashboard | `/` | Real-time match intelligence |
-| Strategy Debt™ | `/strategy-debt` | Deep dive into debt metrics |
-| Player Analysis | `/player-analysis` | Individual player breakdowns |
-| Causal Engine | `/causal-engine` | Interactive graph exploration |
-
-Navigation is handled via sidebar.
-
----
-
-## ⚙️ Configuration
-
-All settings in `.env`:
-
+## Environment variables
+The app reads configuration from Vite environment variables:
 ```env
-# GRID API
-VITE_GRID_API_KEY=YOUR_GRID_API_KEY
-
-# Feature Flags
+VITE_GRID_API_KEY=your_key_here
+VITE_GRID_CENTRAL_DATA_URL=https://api-op.grid.gg/central-data/graphql
+VITE_GRID_SERIES_STATE_URL=https://api-op.grid.gg/live-data-feed/series-state/graphql
+VITE_GRID_FILE_DOWNLOAD_URL=https://api-op.grid.gg/file-download
+VITE_APP_NAME=STRATYX
+VITE_APP_VERSION=0.1.0
 VITE_ENABLE_LIVE_MODE=true
 VITE_ENABLE_DEMO_MODE=true
-
-# Thresholds
+VITE_ENABLE_COUNTERFACTUAL_SIM=true
+VITE_ENABLE_ANALYTICS=false
+VITE_ANALYTICS_ENDPOINT=
 VITE_DEBT_CRITICAL_THRESHOLD=75
+VITE_DEBT_WARNING_THRESHOLD=50
+VITE_WINPROB_UPDATE_INTERVAL=5000
+VITE_WINPROB_CONFIDENCE_MIN=0.3
 VITE_PATTERN_MIN_OCCURRENCES=3
+VITE_PATTERN_MIN_CONFIDENCE=0.65
+VITE_THEME=dark
+VITE_ANIMATION_DURATION=300
 ```
 
----
+If you do not set the endpoint variables, the app uses the default hackathon endpoints shown above.
 
-## 🧪 Development
+## Security and API keys
+- Keep your API key in `.env` only. This file is ignored by git.
+- Do not paste keys into source files or commit them to the repository.
+- The Settings modal can test a key for the current session, but changes are not persisted. Update `.env` for permanence.
 
-```bash
-# Development server with hot reload
-npm run dev
-
-# Type checking
-npm run build
-
-# Linting
-npm run lint
-
-# Production build
-npm run build && npm run preview
+## Project structure
+```
+src/
+  components/          Core UI components
+  config/              Environment-based configuration
+  contexts/            Global analytics state and caching
+  services/            GRID API clients and analytics engines
+  views/               Dashboard, insights, and analysis screens
 ```
 
----
-
-## 🌟 Competitive Advantage
-
-STRATYX stands apart globally because it:
-
-1. ✅ Uses **official GRID live data** (real-time esports events)
-2. ✅ Introduces **causal intelligence** to esports (not just correlation)
-3. ✅ Produces **prioritized, coach-ready insights** (impact-ranked)
-4. ✅ Supports **live strategic intervention** (mid-match recommendations)
-5. ✅ Is both **research-grade and commercially viable**
-
-This combination is rare even in traditional sports analytics.
-
----
-
-## 📚 Documentation
-
-- [Setup Guide](./SETUP.md) - Detailed installation and configuration
-- [GRID API Docs](https://developers.grid.gg) - Official GRID documentation
-- [Architecture Design](./ARCHITECTURE.md) - System design (TODO)
-
----
-
-## 🚧 Roadmap
-
-- [ ] Multi-series comparison
-- [ ] Historical trend analysis
-- [ ] Coach annotation system
-- [ ] Export reports (PDF/JSON)
-- [ ] Team collaboration features
-- [ ] Mobile-responsive design
-- [ ] Advanced counterfactual simulations
-
----
-
-## 📄 License
-
-This project is proprietary. All rights reserved.
-
----
-
-## 🙏 Acknowledgments
-
-Built with official **GRID APIs** for esports data.
-
-GRID provides live and historical data for CS:GO, Dota 2, League of Legends, and more.
-
----
-
-**STRATYX** - *Transforming esports data into strategic intelligence.*
+## License
+See `LICENSE`.
