@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, WifiOff, CheckCircle, AlertCircle, Loader, RefreshCw, Save, Eye, EyeOff, Server, Key, Activity, Zap } from 'lucide-react';
+import { X, WifiOff, CheckCircle, AlertCircle, Loader, RefreshCw, Server, Key, Activity, Zap } from 'lucide-react';
 import { config } from '../config';
 
 interface ApiStatus {
@@ -22,10 +22,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     { name: 'GRID File Download', endpoint: config.grid.fileDownloadUrl, status: 'checking' },
   ]);
 
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [localApiKey, setLocalApiKey] = useState(config.grid.apiKey);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Check if an API key is configured (without exposing the actual value)
+  const hasApiKey = Boolean(config.grid.apiKey && config.grid.apiKey.length > 0);
 
   // Feature toggles from config
   const [featureToggles, setFeatureToggles] = useState({
@@ -51,7 +51,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': localApiKey,
+            'x-api-key': config.grid.apiKey,
           },
           body: JSON.stringify({
             query: '{ __typename }',
@@ -75,7 +75,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           const response = await fetch(endpoint, {
             method: 'OPTIONS',
             headers: {
-              'x-api-key': localApiKey,
+              'x-api-key': config.grid.apiKey,
             },
           });
           const latency = Date.now() - startTime;
@@ -118,20 +118,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
     setApiStatuses(results);
     setIsTestingConnection(false);
-  };
-
-  const handleSaveApiKey = () => {
-    // Note: In a real app, this would persist the API key
-    // For Vite env vars, you'd need to restart the dev server
-    // This is just for demonstration - the key is stored in state only
-    setSaveMessage({
-      type: 'success',
-      text: 'API key updated for this session. Add to .env file for persistence.',
-    });
-    setTimeout(() => setSaveMessage(null), 5000);
-    
-    // Re-check API status with new key
-    checkAllApiStatus();
   };
 
   const getStatusIcon = (status: ApiStatus['status']) => {
@@ -261,41 +247,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </h3>
 
             <div className="space-y-4">
-              {/* API Key Input */}
+              {/* API Key Status */}
               <div className="p-4 rounded-lg border border-slate-700 bg-slate-800/50">
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   GRID API Key
                 </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type={showApiKey ? 'text' : 'password'}
-                      value={localApiKey}
-                      onChange={(e) => setLocalApiKey(e.target.value)}
-                      placeholder="Enter your GRID API key"
-                      className="w-full px-4 py-2 pr-10 rounded-lg bg-slate-900 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
-                    />
-                    <button
-                      onClick={() => setShowApiKey(!showApiKey)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                    >
-                      {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                {hasApiKey ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success/10 border border-success/30">
+                    <CheckCircle size={14} className="text-success" />
+                    <span className="text-sm text-success">API key configured</span>
+                    <span className="text-xs text-slate-500 ml-auto">••••••••••••••••</span>
                   </div>
-                  <button
-                    onClick={handleSaveApiKey}
-                    className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/80 text-white font-medium flex items-center gap-2 transition-colors"
-                  >
-                    <Save size={16} />
-                    Save
-                  </button>
-                </div>
-                {saveMessage && (
-                  <p className={`mt-2 text-xs ${saveMessage.type === 'success' ? 'text-success' : 'text-danger'}`}>
-                    {saveMessage.text}
-                  </p>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-danger/10 border border-danger/30">
+                    <AlertCircle size={14} className="text-danger" />
+                    <span className="text-sm text-danger">No API key configured</span>
+                  </div>
                 )}
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-3 text-xs text-slate-500">
+                  To update your API key, edit the <code className="px-1 py-0.5 bg-slate-700 rounded text-slate-300">.env</code> file and restart the app.
                   Get your API key from{' '}
                   <a
                     href="https://grid.gg"
