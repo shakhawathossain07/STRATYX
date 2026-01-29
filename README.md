@@ -1,100 +1,254 @@
-# STRATYX
+<div align="center">
 
-STRATYX is a data-driven assistant coach for esports teams. It uses official GRID APIs to pull real match data and turn it into actionable coaching insights inside a single React dashboard.
+# 🎮 STRATYX
 
-## What this app does
-- Pulls real series data from GRID Central Data and Series State APIs
-- Lets coaches select matches by game (Valorant, LoL; CS2 and Dota2 currently fall back to Valorant series)
-- Shows live scoreboards, map breakdowns, and player K/D stats
-- Provides a player analysis view with sortable tables and per-map performance
-- Generates coaching insights based on verified match stats
-- Shows API health checks and settings in-app, including API key status
-- Includes a 3D assistant panel with optional background audio
+### **AI-Powered Assistant Coach for Esports Teams**
 
-## Views
-- Live Dashboard
-- Coach Insights
-- Player Analysis
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## Data sources
-- Central Data GraphQL
-- Series State GraphQL
-- File Download API (optional, used for event and end-state downloads)
+*Transform real match data into actionable coaching insights with the power of data science and AI*
 
-All displayed match stats (kills, deaths, maps, scores) come directly from GRID data. Derived metrics (K/D, win probability, strategy debt) are calculated locally and labeled as analysis.
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Documentation](#-documentation) • [Contributing](#-contributing)
 
-## Tech stack
-- React 18, TypeScript, Vite
-- Tailwind CSS
-- Apollo Client (GraphQL)
-- Recharts
-- three.js (3D assistant)
+---
 
-## Getting started
+</div>
+
+## 📖 Overview
+
+**STRATYX** is a comprehensive data-driven assistant coach designed for esports teams. It leverages official GRID APIs to pull real match data and transforms it into actionable coaching insights—all within a sleek, modern React dashboard.
+
+Whether you're coaching **Valorant**, **League of Legends**, **CS2**, or **Dota 2** teams, STRATYX provides the analytical edge you need to optimize strategies and elevate player performance.
+
+## ✨ Features
+
+### 🔴 Real-Time Match Data
+- **Live Series Tracking** — Pull real-time data from GRID Central Data and Series State APIs
+- **Multi-Game Support** — Valorant, LoL, CS2, and Dota 2 compatibility
+- **Live Scoreboards** — Real-time map breakdowns and player statistics
+
+### 📊 Advanced Analytics
+- **Win Probability Engine** — Real-time win probability calculations with confidence intervals
+- **Strategy Debt Meter** — Track and visualize strategic inefficiencies
+- **Causal Analysis** — Understand cause-and-effect relationships in gameplay
+- **Pattern Recognition** — Identify recurring patterns and tendencies
+
+### 🤖 AI-Powered Coaching
+- **AI Coach Chat** — Interactive AI assistant for strategic advice
+- **Automated Insights** — Generate coaching insights based on verified match stats
+- **Player Impact Analysis** — Evaluate individual player contributions
+
+### 🎯 Intuitive Dashboard Views
+
+| View | Description |
+|------|-------------|
+| **Live Dashboard** | Real-time match monitoring with live stats and scoreboards |
+| **Coach Insights** | AI-generated strategic recommendations and analysis |
+| **Player Analysis** | Sortable tables, per-map performance, and player metrics |
+
+### 🎨 Modern UI/UX
+- **3D Assistant Panel** — Interactive three.js powered assistant with optional audio
+- **Dark Theme** — Easy on the eyes during long coaching sessions
+- **Responsive Design** — Works seamlessly across devices
+
+## 🛠️ Tech Stack
+
+<table>
+<tr>
+<td align="center" width="96">
+<img src="https://skillicons.dev/icons?i=react" width="48" height="48" alt="React" />
+<br>React 18
+</td>
+<td align="center" width="96">
+<img src="https://skillicons.dev/icons?i=typescript" width="48" height="48" alt="TypeScript" />
+<br>TypeScript
+</td>
+<td align="center" width="96">
+<img src="https://skillicons.dev/icons?i=vite" width="48" height="48" alt="Vite" />
+<br>Vite
+</td>
+<td align="center" width="96">
+<img src="https://skillicons.dev/icons?i=tailwind" width="48" height="48" alt="Tailwind" />
+<br>Tailwind CSS
+</td>
+<td align="center" width="96">
+<img src="https://skillicons.dev/icons?i=threejs" width="48" height="48" alt="Three.js" />
+<br>Three.js
+</td>
+<td align="center" width="96">
+<img src="https://skillicons.dev/icons?i=graphql" width="48" height="48" alt="GraphQL" />
+<br>Apollo Client
+</td>
+</tr>
+</table>
+
+**Additional Libraries:**
+- **Recharts** — Beautiful, composable charting library
+- **Apollo Client** — GraphQL state management
+
+## 📦 Installation
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+- GRID API Key ([Get one here](https://grid.gg))
+
+### Quick Start
+
 ```bash
+# Clone the repository
+git clone https://github.com/shakhawathossain07/STRATYX.git
+cd STRATYX
+
+# Install dependencies
 npm install
+
+# Set up environment variables
 cp .env.example .env
 ```
 
 Add your GRID API key to `.env`:
+
 ```env
-VITE_GRID_API_KEY=your_key_here
+VITE_GRID_API_KEY=your_api_key_here
 ```
 
-Run the app:
+Start the development server:
+
 ```bash
 npm run dev
 ```
 
-App runs at `http://localhost:5173`.
+🚀 The app will be running at **http://localhost:5173**
 
-## Scripts
-- `npm run dev`
-- `npm run build`
-- `npm run preview`
-- `npm run lint`
+## 📋 Available Scripts
 
-## Environment variables
-The app reads configuration from Vite environment variables:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint for code quality |
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
 ```env
-VITE_GRID_API_KEY=your_key_here
+# Required
+VITE_GRID_API_KEY=your_api_key_here
+
+# API Endpoints (defaults provided)
 VITE_GRID_CENTRAL_DATA_URL=https://api-op.grid.gg/central-data/graphql
 VITE_GRID_SERIES_STATE_URL=https://api-op.grid.gg/live-data-feed/series-state/graphql
 VITE_GRID_FILE_DOWNLOAD_URL=https://api-op.grid.gg/file-download
+
+# App Configuration
 VITE_APP_NAME=STRATYX
 VITE_APP_VERSION=0.1.0
+VITE_THEME=dark
+
+# Feature Flags
 VITE_ENABLE_LIVE_MODE=true
 VITE_ENABLE_DEMO_MODE=true
 VITE_ENABLE_COUNTERFACTUAL_SIM=true
 VITE_ENABLE_ANALYTICS=false
-VITE_ANALYTICS_ENDPOINT=
+
+# Analytics Thresholds
 VITE_DEBT_CRITICAL_THRESHOLD=75
 VITE_DEBT_WARNING_THRESHOLD=50
 VITE_WINPROB_UPDATE_INTERVAL=5000
 VITE_WINPROB_CONFIDENCE_MIN=0.3
 VITE_PATTERN_MIN_OCCURRENCES=3
 VITE_PATTERN_MIN_CONFIDENCE=0.65
-VITE_THEME=dark
+
+# UI Settings
 VITE_ANIMATION_DURATION=300
 ```
 
-If you do not set the endpoint variables, the app uses the default hackathon endpoints shown above.
+> **Note:** If endpoint variables are not set, the app uses default GRID hackathon endpoints.
 
-## Security and API keys
-- Keep your API key in `.env` only. This file is ignored by git.
-- Do not paste keys into source files or commit them to the repository.
-- The Settings modal only displays whether an API key is configured. To change it, edit `.env` and restart the dev server.
+## 📁 Project Structure
 
-## Project structure
 ```
 src/
-  components/          Core UI components
-  config/              Environment-based configuration
-  contexts/            Global analytics state and caching
-  services/            GRID API clients and analytics engines
-  views/               Dashboard, insights, and analysis screens
+├── components/         # Reusable UI components
+│   ├── AICoachChat.tsx         # AI coaching interface
+│   ├── CausalGraph.tsx         # Causal analysis visualization
+│   ├── FloatingAICoach.tsx     # Floating AI assistant
+│   ├── PlayerImpactCard.tsx    # Player statistics cards
+│   ├── StrategyDebtMeter.tsx   # Strategy debt visualization
+│   ├── WinProbabilityChart.tsx # Win probability display
+│   └── ...
+├── config/             # Environment-based configuration
+├── contexts/           # React contexts for global state
+│   ├── CoachAnalyticsContext.tsx
+│   └── StratyxContext.tsx
+├── hooks/              # Custom React hooks
+├── services/           # API clients & analytics engines
+│   ├── aiCoachingEngine.ts     # AI coaching logic
+│   ├── causalEngine.ts         # Causal analysis
+│   ├── geminiAIService.ts      # AI integration
+│   ├── gridApi.ts              # GRID API client
+│   ├── winProbability.ts       # Win probability calculations
+│   └── ...
+├── types/              # TypeScript type definitions
+├── utils/              # Helper utilities
+└── views/              # Page components
+    ├── CoachDashboard.tsx
+    ├── CoachInsightsView.tsx
+    ├── Dashboard.tsx
+    ├── MatchAnalysisView.tsx
+    └── PlayerAnalysisView.tsx
 ```
 
-## License
-MIT Open Source
+## 📊 Data Sources
+
+STRATYX integrates with official GRID APIs:
+
+| API | Purpose |
+|-----|---------|
+| **Central Data GraphQL** | Historical match data and statistics |
+| **Series State GraphQL** | Live match state and real-time updates |
+| **File Download API** | Event logs and end-state data (optional) |
+
+> **Data Transparency:** All displayed match stats (kills, deaths, maps, scores) come directly from GRID data. Derived metrics (K/D ratios, win probability, strategy debt) are calculated locally and clearly labeled as analysis.
+
+## 🔒 Security
+
+- ✅ Keep your API key in `.env` only — this file is git-ignored
+- ✅ Never paste keys into source files or commit them
+- ✅ The Settings modal only shows if an API key is configured
+- ✅ To change your key, edit `.env` and restart the dev server
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Built with ❤️ for the esports community**
+
+[⬆ Back to Top](#-stratyx)
+
+</div>
 
