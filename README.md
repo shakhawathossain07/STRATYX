@@ -3,6 +3,7 @@
 # 🎮 STRATYX
 
 ### **AI-Powered Assistant Coach for Esports Teams**
+<img width="959" height="412" alt="x" src="https://github.com/user-attachments/assets/2d29eec0-4da7-4fc3-ac90-5078e91f3713" />
 
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
